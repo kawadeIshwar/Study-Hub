@@ -65,82 +65,125 @@ const UploadForm = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full justify-center">
-      <div className="flex bg-[#b3b3b3] mt-12 rounded-[30px] w-[1000px] h-[520px] justify-center items-center animate-slideUp ">
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/20 backdrop-blur-md border border-white shadow-lg p-8 rounded-2xl
-          w-full md:m-10 sm:m-4 sm-h-full mx-auto my-10 bg-gradient-to-tl from-[#0e0c2d] via-[#216578]
-          to-[#01152b] animate-fadeIn text-blue-100 custom-lg:w-1/2 sm:w-full sm"
-        >
-          <h2 className="text-2xl font-bold text-center text-[#83def8] mb-6">
-            Upload Notes
-          </h2>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decorations */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-300 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-300 dark:bg-indigo-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-floatSlow"></div>
+      </div>
 
-          {/* Form Inputs */}
-          <input
-            type="text"
-            name="title"
-            placeholder="Title"
-            value={formData.title}
-            onChange={handleChange}
-            className="w-full mb-4 px-4 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900"
-            required
-          />
+      <div className="relative z-10 max-w-6xl w-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-3xl shadow-2xl overflow-hidden animate-slideUp">
+        <div className="flex flex-col custom-lg:flex-row">
+          {/* Form Section */}
+          <div className="flex-1 p-8 md:p-12">
+            <div className="mb-8">
+              <h2 className="text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-2">
+                Upload Notes
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">Share your knowledge with the community</p>
+            </div>
 
-          <input
-            type="text"
-            name="subject"
-            placeholder="Subject"
-            value={formData.subject}
-            onChange={handleChange}
-            className="w-full mb-4 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900"
-            required
-          />
+            <form onSubmit={handleSubmit} className="space-y-6 animate-fadeIn">
+              {/* Title Input */}
+              <div className="relative group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  📝 Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  placeholder="Enter note title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full px-5 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500"
+                  required
+                />
+              </div>
 
-          <input
-            type="text"
-            name="semester"
-            placeholder="Semester"
-            value={formData.semester}
-            onChange={handleChange}
-            className="w-full mb-4 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900"
-          />
+              {/* Subject Input */}
+              <div className="relative group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  📚 Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="subject"
+                  placeholder="e.g., Mathematics, Physics"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  className="w-full px-5 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500"
+                  required
+                />
+              </div>
 
-          <input
-            type="text"
-            name="tags"
-            placeholder="Tags (comma separated)"
-            value={formData.tags}
-            onChange={handleChange}
-            className="w-full mb-4 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900"
-          />
+              {/* Semester Input */}
+              <div className="relative group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  🎓 Semester
+                </label>
+                <input
+                  type="text"
+                  name="semester"
+                  placeholder="e.g., 1st, 2nd, 3rd"
+                  value={formData.semester}
+                  onChange={handleChange}
+                  className="w-full px-5 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
 
-          <input
-            type="file"
-            name="file"
-            accept=".pdf,.docx,.txt"
-            onChange={handleChange}
-            className="w-full mb-6 text-gray-800"
-            required
-          />
+              {/* Tags Input */}
+              <div className="relative group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  🏷️ Tags
+                </label>
+                <input
+                  type="text"
+                  name="tags"
+                  placeholder="e.g., algebra, calculus, geometry"
+                  value={formData.tags}
+                  onChange={handleChange}
+                  className="w-full px-5 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="bg-gray-950 text-gray-400 border border-gray-400 border-b-4 font-medium overflow-hidden relative px-4 py-2 rounded-md hover:brightness-150 hover:border-t-4 hover:border-b active:opacity-75 outline-none duration-300 group"
-          >
-            <span className="bg-gray-400 shadow-gray-400 absolute -top-[150%] left-0 inline-flex w-80 h-[5px] rounded-md opacity-50 group-hover:top-[150%] duration-500 shadow-[0_0_10px_10px_rgba(0,0,0,0.3)]"></span>
-            Upload
-          </button>
-        </form>
+              {/* File Input */}
+              <div className="relative group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  📎 File <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="file"
+                    accept=".pdf,.docx,.txt"
+                    onChange={handleChange}
+                    className="w-full px-5 py-3 rounded-xl border-2 border-dashed border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/20 text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 file:cursor-pointer cursor-pointer transition-all duration-300"
+                    required
+                  />
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Supported formats: PDF, DOCX, TXT</p>
+              </div>
 
-        {/* Image beside form (for large screens only) */}
-        <img
-          src="student-12.png"
-          alt="student"
-          className="rounded-tr-[30px] rounded-br-[30px] animate-fadeIn hidden custom-lg:block h-full"
-        />
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl hover:shadow-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 active:scale-95 text-lg"
+              >
+                Upload Notes 🚀
+              </button>
+            </form>
+          </div>
+
+          {/* Image Section */}
+          <div className="hidden custom-lg:flex flex-1 relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-12 items-center justify-center">
+            <div className="absolute inset-0 bg-dots opacity-20"></div>
+            <img
+              src="student-12.png"
+              alt="student"
+              className="relative z-10 w-full max-w-md h-auto object-contain drop-shadow-2xl animate-float"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

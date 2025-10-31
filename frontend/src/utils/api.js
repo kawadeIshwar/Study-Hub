@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Base URL for your backend API
-const API_BASE_URL = 'https://studyhub-backend-kxxh.onrender.com/api';
+// Base URL for your backend API - uses environment variable
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
 
 // Create axios instance with base configuration
 const api = axios.create({

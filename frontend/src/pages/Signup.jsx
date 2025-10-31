@@ -1,8 +1,9 @@
-import { useState } from 'react';    // To manage form data
-import { toast } from 'react-toastify';  // For toast messages
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { authAPI } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { User, Mail, Lock, ArrowRight, Sparkles, Shield } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -12,7 +13,6 @@ const Signup = () => {
     password: '',
   });
 
-  // ✅ Handle input change
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -20,17 +20,14 @@ const Signup = () => {
     });
   };
 
-  // ✅ Handle form submit
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent page reload
+    e.preventDefault();
 
     try {
       const res = await authAPI.signup(formData);
       toast.success('Registered successfully!');
-
-      setFormData({ name: '', email: '', password: '' }); // Reset form
-
-      // ✅ Redirect to login page after 1.5 sec
+      setFormData({ name: '', email: '', password: '' });
+      
       setTimeout(() => {
         navigate('/login');
       }, 1500);
@@ -41,96 +38,170 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full justify-center items-center p-4">
-      <div className="flex flex-col lg:flex-row bg-[#c0bfb4] rounded-[30px] w-full 
-      max-w-5xl h-[520px] justify-center items-center shadow-xl animate-slideUp ">
-        {/* Signup Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col items-center justify-center p-8 sm:p-12 border-2 border-gray-700 rounded-[30px] 
-               bg-gradient-to-tl from-[#000000] via-[#4e4e4e] to-[#000000] w-full lg:w-1/2 
-               h-screen lg:h-auto lg:m-5 transition-all duration-700 hover:shadow-emerald-500 animate-fadeIn"
-        >
-          <h1 className="text-4xl p-4 text-[#fff7a1]">Sign up</h1>
-          <p className="text-gray-300 mb-4 hidden min-xs:block">
-            Please enter your username, email and password
+    <div className="min-h-screen flex relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-gradient-to-br from-emerald-400 to-teal-300 dark:from-emerald-900 dark:to-teal-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-3xl opacity-30 animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-gradient-to-br from-green-400 to-cyan-300 dark:from-green-900 dark:to-cyan-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-3xl opacity-30 animate-floatSlow"></div>
+      </div>
+
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-emerald-600 via-teal-600 to-green-700 dark:from-emerald-800 dark:via-teal-800 dark:to-green-900 p-12 items-center justify-center">
+        <div className="absolute inset-0 bg-grid opacity-10"></div>
+        
+        <div className="relative z-10 text-white space-y-8 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+            <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
+            <span className="text-sm font-bold">Join 10,000+ Students</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-black leading-tight">
+            Start Your <span className="text-yellow-300">Learning Journey</span>
+          </h1>
+          
+          <p className="text-xl text-emerald-100 leading-relaxed">
+            Create an account to access thousands of study materials, join communities, and collaborate with peers worldwide.
           </p>
-
-          {/* Name Input */}
-          <div className="relative group w-full max-w-xs mb-4">
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Username"
-              required
-              className="w-full px-4 py-2 text-white bg-[#272727] rounded-xl relative z-10 outline-none 
-              shadow-2xl shadow-emerald-900 placeholder-gray-400 focus:shadow-emerald-600 transition-all duration-300"
+          
+          <div className="space-y-4 pt-6">
+            {[
+              { icon: <Shield className="w-6 h-6" />, text: 'Secure & Private' },
+              { icon: <User className="w-6 h-6" />, text: 'Free Forever' },
+              { icon: <Sparkles className="w-6 h-6" />, text: 'Instant Access' }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <span className="text-lg font-semibold">{item.text}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="pt-8">
+            <img 
+              src="/student-8.png" 
+              alt="Students" 
+              className="w-full max-w-md mx-auto drop-shadow-2xl floating"
             />
           </div>
+        </div>
+      </div>
 
-          {/* Email Input */}
-          <div className="relative group w-full max-w-xs mb-4">
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              required
-              className="w-full px-4 py-2 text-white bg-[#272727] rounded-xl relative z-10 outline-none 
-              shadow-2xl shadow-emerald-900 placeholder-gray-400 focus:shadow-emerald-600 transition-all duration-300"
-            />
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
+        <div className="w-full max-w-md space-y-8 animate-fadeIn">
+          {/* Logo for mobile */}
+          <div className="lg:hidden text-center">
+            <h2 className="text-3xl font-black">
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                StudyHub
+              </span>
+            </h2>
           </div>
 
-          {/* Password Input */}
-          <div className="relative group w-full max-w-xs mb-6">
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              required
-              className="w-full px-4 py-2 text-white bg-[#272727] rounded-xl relative z-10 outline-none 
-              shadow-2xl shadow-emerald-900 placeholder-gray-400 focus:shadow-emerald-600 transition-all duration-300"
-            />
+          {/* Header */}
+          <div className="text-center lg:text-left">
+            <h2 className="text-4xl font-black text-gray-900 dark:text-white mb-2">
+              Create Account
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Sign up to get started with StudyHub
+            </p>
           </div>
 
-          {/* Submit Button */}
-          <div className="relative group mb-4">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                Full Name
+              </label>
+              <div className="relative group">
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  required
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Email Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                Email Address
+              </label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                Password
+              </label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a strong password"
+                  required
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
-              className="relative inline-block p-px font-semibold leading-3 text-white bg-neutral-900 shadow-2xl cursor-pointer 
-              rounded-2xl shadow-emerald-900 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:shadow-emerald-600"
+              className="group w-full px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
             >
-              <span className="relative z-10 block px-6 py-3 rounded-2xl bg-neutral-950">
-                <div className="relative z-10 flex items-center space-x-3">
-                  <span className="transition-all duration-500 group-hover:translate-x-1.5 group-hover:text-emerald-300">Sign up</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" />
-                  </svg>
-                </div>
-              </span>
+              <span>Create Account</span>
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-semibold">
+                Already have an account?
+              </span>
+            </div>
           </div>
 
-          {/* Link to Login Page */}
-          <p className="text-white">
-            Already have an account?{' '}
-            <a href="/Login" className="text-emerald-400 underline">
-              Login
+          {/* Login Link */}
+          <div className="text-center">
+            <a
+              href="/login"
+              className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-300"
+            >
+              Sign in to your account
+              <ArrowRight className="w-5 h-5" />
             </a>
-          </p>
-        </form>
-
-        {/* Side Image */}
-        <img
-          src="student-9.png"
-          alt="student"
-          className="rounded-tr-[30px] rounded-br-[30px] animate-fadeIn hidden lg:block h-full"
-        />
+          </div>
+        </div>
       </div>
     </div>
   );
