@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { CommunitiesProvider } from './contexts/CommunitiesContext';
 import Home from './pages/Home';
 import Upload from './pages/Upload';
@@ -10,8 +11,28 @@ import CommunityDetail from './pages/CommunityDetail';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import BackendStatus from './components/BackendStatus';
+import keepAliveService from './services/keepAlive';
+import cacheService from './services/cacheService';
 
 function App() {
+  useEffect(() => {
+    // Start keep-alive service to prevent backend cold starts
+    keepAliveService.start();
+    
+    // Clean up old cache on app start
+    cacheService.clearOldCache();
+    
+    // Log cache stats
+    const stats = cacheService.getCacheStats();
+    console.log('📊 Cache stats:', stats);
+    
+    // Cleanup on unmount
+    return () => {
+      keepAliveService.stop();
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -27,6 +48,7 @@ function App() {
           <Route path="/communities/:communityId" element={<CommunityDetail />} />
         </Routes>
         <Footer />
+        <BackendStatus />
       </CommunitiesProvider>
     </BrowserRouter>
   );

@@ -4,11 +4,12 @@ import Note from '../models/Note.js';
 import { Router } from 'express';
 import fs from 'fs'; // Importing Node.js file system module for deleting files
 import auth from '../middleware/auth.js'; // Importing authentication middleware to protect routes
+import { cacheMiddleware, invalidateCache, CACHE_DURATION } from '../middleware/cache.js';
 
 const upload = multer({ dest: 'uploads/' });
 const router = Router();
 
-router.post('/', auth, upload.single('file'), async (req, res) => {
+router.post('/', auth, invalidateCache('cache:/api/upload/all'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "File is required!" });
@@ -42,7 +43,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-router.get('/all', async (req, res) => {
+router.get('/all', cacheMiddleware(CACHE_DURATION.long), async (req, res) => {
   try {
     const notes = await Note.find().sort({ date: -1 }).populate('uploader', 'name email');
     res.status(200).json(notes);

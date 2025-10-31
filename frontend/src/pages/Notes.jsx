@@ -5,19 +5,47 @@ import NoteCard from '../components/NoteCard';
 import { toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Search, Filter, TrendingUp, BookOpen, Users, Download, Sparkles, Award } from 'lucide-react';
+import cacheService from '../services/cacheService';
 
 const Notes = () => {
   const [notes, setNotes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [isLoadingFresh, setIsLoadingFresh] = useState(false);
 
   useEffect(() => {
     const fetchNotes = async () => {
       try {
+        // Try to load from cache first for instant display
+        const cachedNotes = cacheService.get('notes_all');
+        if (cachedNotes) {
+          console.log('📦 Loading notes from cache...');
+          setNotes(cachedNotes);
+          // Removed toast - silent cache load for better UX
+        }
+
+        // Fetch fresh data in background
+        setIsLoadingFresh(true);
         const res = await axios.get('https://studyhub-backend-kxxh.onrender.com/api/upload/all');
+        
+        // Update cache and state with fresh data
+        cacheService.set('notes_all', res.data);
         setNotes(res.data);
+        setIsLoadingFresh(false);
+        
+        // Only show success toast if it's the first load (no cached data)
+        if (!cachedNotes) {
+          console.log('✅ Notes loaded successfully');
+        }
       } catch (error) {
-        toast.error("Couldn't load notes");
+        setIsLoadingFresh(false);
+        // Only show error if we have no data to display
+        if (!cachedNotes && notes.length === 0) {
+          toast.error("Couldn't load notes. Please check your connection.");
+        } else {
+          // Silent fallback to cache - better UX
+          console.warn('Using cached data, fresh fetch failed:', error.message);
+        }
       }
     };
 

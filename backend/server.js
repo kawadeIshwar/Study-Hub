@@ -1,5 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
+import compression from 'compression';
 import uploadRoutes from './routes/UploadNotes.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -38,6 +39,17 @@ app.use(cors({
     }
   },
   credentials: true
+}));
+
+// Enable compression for all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6 // Compression level (0-9)
 }));
 
 app.use(express.json());

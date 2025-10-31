@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { authAPI } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, ArrowRight, Sparkles, Shield } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Sparkles, Shield, GraduationCap, BookOpen, Building2, Phone, Hash, Calendar } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -11,6 +11,13 @@ const Signup = () => {
     name: '',
     email: '',
     password: '',
+    college: '',
+    course: '',
+    department: '',
+    year: '1st Year',
+    semester: '',
+    rollNumber: '',
+    phone: '',
   });
 
   const handleChange = (e) => {
@@ -26,7 +33,18 @@ const Signup = () => {
     try {
       const res = await authAPI.signup(formData);
       toast.success('Registered successfully!');
-      setFormData({ name: '', email: '', password: '' });
+      setFormData({ 
+        name: '', 
+        email: '', 
+        password: '',
+        college: '',
+        course: '',
+        department: '',
+        year: '1st Year',
+        semester: '',
+        rollNumber: '',
+        phone: '',
+      });
       
       setTimeout(() => {
         navigate('/login');
@@ -89,8 +107,8 @@ const Signup = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
-        <div className="w-full max-w-md space-y-8 animate-fadeIn">
+      <div className="w-full lg:w-1/2 flex items-start justify-center p-6 md:p-12 relative overflow-y-auto">
+        <div className="w-full max-w-md space-y-6 my-8 animate-fadeIn">
           {/* Logo for mobile */}
           <div className="lg:hidden text-center">
             <h2 className="text-3xl font-black">
@@ -111,7 +129,7 @@ const Signup = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Input */}
             <div className="space-y-2">
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -166,6 +184,162 @@ const Signup = () => {
                   required
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
                 />
+              </div>
+            </div>
+
+            {/* Student Information Section */}
+            <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-700">
+              <div className="mb-4">
+                <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-emerald-600" />
+                  Student Information
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Help us personalize your experience
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                {/* College/University */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                    College/University
+                  </label>
+                  <div className="relative group">
+                    <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                    <input
+                      type="text"
+                      name="college"
+                      value={formData.college}
+                      onChange={handleChange}
+                      placeholder="Enter your college name"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                    />
+                  </div>
+                </div>
+
+                {/* Course and Department - Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Course */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Course
+                    </label>
+                    <div className="relative group">
+                      <BookOpen className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <input
+                        type="text"
+                        name="course"
+                        value={formData.course}
+                        onChange={handleChange}
+                        placeholder="e.g., B.Tech, B.Sc"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Department */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Department
+                    </label>
+                    <div className="relative group">
+                      <GraduationCap className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <input
+                        type="text"
+                        name="department"
+                        value={formData.department}
+                        onChange={handleChange}
+                        placeholder="e.g., Computer Science"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Year and Semester - Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Year of Study */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Year of Study
+                    </label>
+                    <div className="relative group">
+                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <select
+                        name="year"
+                        value={formData.year}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 appearance-none cursor-pointer"
+                      >
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                        <option value="Graduate">Graduate</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Semester */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Semester
+                    </label>
+                    <div className="relative group">
+                      <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <input
+                        type="text"
+                        name="semester"
+                        value={formData.semester}
+                        onChange={handleChange}
+                        placeholder="e.g., 1, 2, 3..."
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Roll Number and Phone - Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Roll Number */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Roll Number
+                    </label>
+                    <div className="relative group">
+                      <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <input
+                        type="text"
+                        name="rollNumber"
+                        value={formData.rollNumber}
+                        onChange={handleChange}
+                        placeholder="Enter roll number"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      Phone Number
+                    </label>
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="Enter phone number"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import auth from '../middleware/auth.js';
 import cloudinary from '../utils/cloudinary.js';
 import multer from 'multer';
+import { cacheMiddleware, invalidateCache, CACHE_DURATION } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Get all communities with search and filter
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
     const { search, tags, page = 1, limit = 12 } = req.query;
     const skip = (page - 1) * limit;
@@ -68,7 +69,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Get single community details
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
     const community = await Community.findById(req.params.id)
       .populate('createdBy', 'name');
@@ -96,7 +97,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Create new community
-router.post('/', auth, upload.single('coverImage'), async (req, res) => {
+router.post('/', auth, invalidateCache('cache:/api/communities'), upload.single('coverImage'), async (req, res) => {
   try {
     const { name, description, tags, isPrivate } = req.body;
     
@@ -179,7 +180,7 @@ router.post('/', auth, upload.single('coverImage'), async (req, res) => {
 });
 
 // Join community
-router.post('/:id/join', auth, async (req, res) => {
+router.post('/:id/join', auth, invalidateCache('cache:/api/communities'), async (req, res) => {
   try {
     const community = await Community.findById(req.params.id);
     if (!community) {
@@ -223,7 +224,7 @@ router.post('/:id/join', auth, async (req, res) => {
 });
 
 // Leave community
-router.post('/:id/leave', auth, async (req, res) => {
+router.post('/:id/leave', auth, invalidateCache('cache:/api/communities'), async (req, res) => {
   try {
     const membership = await CommunityMember.findOne({
       community: req.params.id,
@@ -263,7 +264,7 @@ router.post('/:id/leave', auth, async (req, res) => {
 });
 
 // Get community members
-router.get('/:id/members', auth, async (req, res) => {
+router.get('/:id/members', auth, cacheMiddleware(CACHE_DURATION.short), async (req, res) => {
   try {
     const { role, status = 'active', page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
@@ -305,7 +306,7 @@ router.get('/:id/members', auth, async (req, res) => {
 });
 
 // Get community stats
-router.get('/:id/stats', auth, async (req, res) => {
+router.get('/:id/stats', auth, cacheMiddleware(CACHE_DURATION.short), async (req, res) => {
   try {
     const [totalMembers, onlineMembers, totalMessages, recentMessages] = await Promise.all([
       CommunityMember.countDocuments({ community: req.params.id, status: 'active' }),

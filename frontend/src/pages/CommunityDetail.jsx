@@ -4,6 +4,7 @@ import { Users, Pin, Search, Settings, Bell, Hash } from 'lucide-react';
 import CommunityChat from '../components/CommunityChat';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import cacheService from '../services/cacheService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -28,7 +29,22 @@ export default function CommunityDetail() {
     
     const fetchCommunityData = async () => {
       try {
-        setLoading(true);
+        // Try to load from cache first
+        const cachedCommunity = cacheService.get(`communities_${communityId}`);
+        const cachedMembers = cacheService.get(`communities_${communityId}_members`);
+        
+        if (cachedCommunity && cachedMembers) {
+          console.log('📦 Loading community from cache...');
+          setCurrentCommunity(cachedCommunity);
+          setMembers(cachedMembers);
+          setUserRole(cachedCommunity.userRole);
+          setLoading(false);
+          // Removed toast - silent cache load for better UX
+        } else {
+          setLoading(true);
+        }
+
+        // Fetch fresh data
         const [communityRes, membersRes] = await Promise.all([
           axios.get(`${API_URL}/api/communities/${communityId}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -38,12 +54,28 @@ export default function CommunityDetail() {
           })
         ]);
         
+        // Update cache
+        cacheService.set(`communities_${communityId}`, communityRes.data);
+        cacheService.set(`communities_${communityId}_members`, membersRes.data.members || []);
+        
         setCurrentCommunity(communityRes.data);
         setMembers(membersRes.data.members || []);
         setUserRole(communityRes.data.userRole);
+        
+        // Silent update - no toast needed
+        if (!cachedCommunity) {
+          console.log('✅ Community data loaded successfully');
+        }
       } catch (error) {
         console.error('Error fetching community data:', error);
-        toast.error('Failed to load community details');
+        // Only show error if no cached data available
+        const cachedCommunity = cacheService.get(`communities_${communityId}`);
+        if (!cachedCommunity && !currentCommunity) {
+          toast.error('Failed to load community details');
+        } else {
+          // Silent fallback to cache
+          console.warn('Using cached data, fresh fetch failed:', error.message);
+        }
       } finally {
         setLoading(false);
       }
