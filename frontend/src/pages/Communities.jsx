@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCommunities } from '../contexts/CommunitiesContext';
 import { Search, Users, Calendar, Plus, Filter, TrendingUp, BookOpen, Code, Calculator, Globe, Beaker, MessageCircle, Shield } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const categoryIcons = {
   'Web Development': Globe,
@@ -19,6 +20,7 @@ const predefinedTags = [
 
 export default function Communities() {
   const { communities, fetchCommunities, loading, error, createCommunity } = useCommunities();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -32,6 +34,18 @@ export default function Communities() {
   useEffect(() => {
     fetchCommunities(searchTerm, selectedTags.join(','));
   }, [searchTerm, selectedTags]);
+
+  const handleCommunityClick = (e, communityId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      e.preventDefault();
+      toast.info('Please login to access community', {
+        position: 'top-center',
+        autoClose: 3000
+      });
+      navigate('/login', { state: { from: `/communities/${communityId}` } });
+    }
+  };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -87,8 +101,6 @@ export default function Communities() {
   }
 
   if (error) {
-    const isAuthError = error.includes('access denied') || error.includes('token') || error.includes('401');
-    
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
@@ -99,33 +111,16 @@ export default function Communities() {
           <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <Shield className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-3">Access Required</h2>
+          <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-3">Connection Error</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
-            {isAuthError ? 'Please log in to access communities and connect with peers' : error}
+            {error}
           </p>
-          {isAuthError ? (
-            <div className="flex gap-4">
-              <a
-                href="/login"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105"
-              >
-                Login
-              </a>
-              <a
-                href="/signup"
-                className="flex-1 px-6 py-3 border-2 border-teal-600 text-teal-600 dark:text-teal-400 rounded-xl font-bold hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-300"
-              >
-                Sign Up
-              </a>
-            </div>
-          ) : (
-            <button 
-              onClick={() => fetchCommunities()}
-              className="px-8 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300"
-            >
-              Try Again
-            </button>
-          )}
+          <button 
+            onClick={() => fetchCommunities()}
+            className="px-8 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -296,6 +291,7 @@ export default function Communities() {
                   <Link
                     key={community._id}
                     to={`/communities/${community._id}`}
+                    onClick={(e) => handleCommunityClick(e, community._id)}
                     className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl hover:shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-all duration-500 hover:scale-[1.03] hover:-translate-y-2 animate-fadeInUp"
                     style={{ animationDelay: `${index * 80}ms` }}
                   >
@@ -369,47 +365,57 @@ export default function Communities() {
 
       {/* Create Community Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="relative bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full p-8 shadow-2xl border border-gray-200 dark:border-gray-700 animate-scaleIn">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-t-3xl"></div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn overflow-y-auto">
+          <div className="relative bg-white dark:bg-gray-800 rounded-3xl max-w-3xl w-full p-10 my-8 shadow-2xl border border-gray-200 dark:border-gray-700 animate-scaleIn">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-t-3xl"></div>
             
-            <h2 className="text-3xl font-black bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6">
-              Create New Community
-            </h2>
-            <form onSubmit={handleCreateCommunity}>
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-4xl font-black bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                Create New Community
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleCreateCommunity} className="space-y-8">
+              <div>
+                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
                   Community Name *
                 </label>
                 <input
                   type="text"
                   value={newCommunity.name}
                   onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300 font-semibold"
+                  className="w-full px-5 py-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300 font-semibold"
                   required
                   placeholder="e.g., DSA Study Group"
                 />
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <div>
+                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
                   Description *
                 </label>
                 <textarea
                   value={newCommunity.description}
                   onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
-                  rows={4}
+                  className="w-full px-5 py-4 text-base border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300 resize-none"
+                  rows={5}
                   required
-                  placeholder="Describe what this community is about..."
+                  placeholder="Describe what this community is about... Share the goals, topics, and what members can expect."
                 />
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+              <div>
+                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
                   Tags (select up to 3) *
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {predefinedTags.map(tag => (
                     <button
                       key={tag}
@@ -422,52 +428,68 @@ export default function Communities() {
                             : newCommunity.tags;
                         setNewCommunity({ ...newCommunity, tags: newTags });
                       }}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      className={`px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
                         newCommunity.tags.includes(tag)
-                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg scale-105'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg ring-2 ring-teal-500 ring-offset-2 dark:ring-offset-gray-800'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'
                       }`}
                     >
                       {tag}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  {newCommunity.tags.length}/3 tags selected
-                </p>
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-bold text-teal-600 dark:text-teal-400">{newCommunity.tags.length}</span>/3 tags selected
+                  </p>
+                  {newCommunity.tags.length > 0 && (
+                    <div className="flex gap-2">
+                      {newCommunity.tags.map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full text-xs font-bold">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="mb-8">
-                <label className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-200 dark:border-amber-800 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-300">
+              <div>
+                <label className="flex items-start gap-4 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border-2 border-amber-200 dark:border-amber-800 cursor-pointer hover:bg-gradient-to-br hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 transition-all duration-300">
                   <input
                     type="checkbox"
                     checked={newCommunity.isPrivate}
                     onChange={(e) => setNewCommunity({ ...newCommunity, isPrivate: e.target.checked })}
-                    className="w-5 h-5 text-teal-600 rounded focus:ring-2 focus:ring-teal-500"
+                    className="w-6 h-6 text-teal-600 rounded-lg focus:ring-2 focus:ring-teal-500 mt-1"
                   />
-                  <div>
-                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100 block">
-                      Make this community private
-                    </span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      Only invited members can join
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+                        Make this community private
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-xs font-bold rounded-full">
+                        OPTIONAL
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Private communities are invite-only. Members must be approved before joining.
                     </span>
                   </div>
                 </label>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
+                  className="flex-1 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-2xl text-base font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-105"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!newCommunity.name || !newCommunity.description || newCommunity.tags.length === 0}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
+                  className="flex-1 px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl text-base font-bold hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
                 >
                   Create Community
                 </button>

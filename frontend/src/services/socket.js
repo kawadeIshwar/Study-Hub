@@ -81,6 +81,18 @@ class SocketService {
     }
   }
 
+  editMessage(messageId, content) {
+    if (this.socket && this.connected) {
+      this.socket.emit('edit-message', { messageId, content });
+    }
+  }
+
+  addReaction(messageId, emoji) {
+    if (this.socket && this.connected) {
+      this.socket.emit('add-reaction', { messageId, emoji });
+    }
+  }
+
   onNewMessage(callback) {
     if (this.socket) {
       this.socket.on('new-message', callback);
@@ -120,6 +132,24 @@ class SocketService {
   onJoinedCommunity(callback) {
     if (this.socket) {
       this.socket.on('joined-community', callback);
+    }
+  }
+
+  onMessageEdited(callback) {
+    if (this.socket) {
+      this.socket.on('message-edited', callback);
+    }
+  }
+
+  onReactionUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('reaction-updated', callback);
+    }
+  }
+
+  onError(callback) {
+    if (this.socket) {
+      this.socket.on('error', callback);
     }
   }
 

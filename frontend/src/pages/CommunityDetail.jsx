@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Users, Pin, Search, Settings, Bell, Hash } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Users, Pin, Search, Settings, Bell, Hash, UserPlus, Lock } from 'lucide-react';
 import CommunityChat from '../components/CommunityChat';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -10,15 +10,30 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function CommunityDetail() {
   const { communityId } = useParams();
+  const navigate = useNavigate();
   const [currentCommunity, setCurrentCommunity] = useState(null);
   const [members, setMembers] = useState([]);
   const [showMembers, setShowMembers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
+  const [isMember, setIsMember] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState(new Set());
   
   const token = localStorage.getItem('token');
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!token) {
+      toast.info('Please login to view community details', {
+        position: 'top-center',
+        autoClose: 3000
+      });
+      navigate('/login', { state: { from: `/communities/${communityId}` } });
+    }
+  }, [token, navigate, communityId]);
 
   const isUserOnline = (userId) => {
     return onlineMembers.has(userId);
@@ -27,69 +42,111 @@ export default function CommunityDetail() {
   useEffect(() => {
     if (!communityId || !token) return;
     
-    const fetchCommunityData = async () => {
+    // Fetch community details FIRST (fastest - just show the page)
+    const fetchCommunityDetails = async () => {
       try {
-        // Try to load from cache first
+        // Check cache first
         const cachedCommunity = cacheService.get(`communities_${communityId}`);
-        const cachedMembers = cacheService.get(`communities_${communityId}_members`);
         
-        if (cachedCommunity && cachedMembers) {
-          console.log('📦 Loading community from cache...');
+        if (cachedCommunity) {
           setCurrentCommunity(cachedCommunity);
-          setMembers(cachedMembers);
           setUserRole(cachedCommunity.userRole);
-          setLoading(false);
-          // Removed toast - silent cache load for better UX
-        } else {
-          setLoading(true);
+          setIsMember(cachedCommunity.isMember || false);
+          setLoading(false); // Show UI immediately with cached data
         }
 
         // Fetch fresh data
-        const [communityRes, membersRes] = await Promise.all([
-          axios.get(`${API_URL}/api/communities/${communityId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${API_URL}/api/communities/${communityId}/members`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
+        const communityRes = await axios.get(`${API_URL}/api/communities/${communityId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
-        // Update cache
         cacheService.set(`communities_${communityId}`, communityRes.data);
-        cacheService.set(`communities_${communityId}_members`, membersRes.data.members || []);
-        
         setCurrentCommunity(communityRes.data);
-        setMembers(membersRes.data.members || []);
         setUserRole(communityRes.data.userRole);
+        setIsMember(communityRes.data.isMember || false);
+        setLoading(false); // Show UI as soon as we have community details
         
-        // Silent update - no toast needed
-        if (!cachedCommunity) {
-          console.log('✅ Community data loaded successfully');
-        }
       } catch (error) {
-        console.error('Error fetching community data:', error);
-        // Only show error if no cached data available
+        console.error('Error fetching community:', error);
         const cachedCommunity = cacheService.get(`communities_${communityId}`);
-        if (!cachedCommunity && !currentCommunity) {
-          toast.error('Failed to load community details');
-        } else {
-          // Silent fallback to cache
-          console.warn('Using cached data, fresh fetch failed:', error.message);
+        if (!cachedCommunity) {
+          toast.error('Failed to load community');
         }
-      } finally {
         setLoading(false);
       }
     };
     
-    fetchCommunityData();
+    // Fetch members in BACKGROUND (parallel, non-blocking)
+    const fetchMembers = async () => {
+      try {
+        const cachedMembers = cacheService.get(`communities_${communityId}_members`);
+        
+        if (cachedMembers) {
+          setMembers(cachedMembers);
+          setMembersLoading(false);
+        }
+
+        const membersRes = await axios.get(`${API_URL}/api/communities/${communityId}/members`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        cacheService.set(`communities_${communityId}_members`, membersRes.data.members || []);
+        setMembers(membersRes.data.members || []);
+        setMembersLoading(false);
+        
+      } catch (error) {
+        console.error('Error fetching members:', error);
+        setMembersLoading(false);
+      }
+    };
+    
+    // Execute both but don't wait - let UI show immediately
+    fetchCommunityDetails();
+    fetchMembers(); // Run in background
+    
   }, [communityId, token]);
 
-  if (loading) {
+  const handleJoinCommunity = async () => {
+    if (!token) {
+      toast.error('Please login to join communities');
+      return;
+    }
+
+    setJoining(true);
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/communities/${communityId}/join`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setIsMember(true);
+      setUserRole('member');
+      toast.success('Successfully joined community! 🎉');
+      
+      // Refresh community data
+      const communityRes = await axios.get(`${API_URL}/api/communities/${communityId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setCurrentCommunity(communityRes.data);
+      cacheService.set(`communities_${communityId}`, communityRes.data);
+      
+    } catch (error) {
+      console.error('Error joining community:', error);
+      toast.error(error.response?.data?.msg || 'Failed to join community');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  // Show minimal loading only if we have no data at all
+  if (loading && !currentCommunity) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading community...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -136,11 +193,17 @@ export default function CommunityDetail() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {members.filter(member => 
-              member?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-            ).map(member => (
-              member?.user ? (
-                <div key={member.user._id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 mb-2">
+            {membersLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-xs text-gray-500 mt-2">Loading members...</p>
+              </div>
+            ) : (
+              members.filter(member => 
+                member?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(member => (
+                member?.user ? (
+                  <div key={member.user._id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 mb-2">
                   <div className="relative">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {member.user.name.charAt(0).toUpperCase()}
@@ -157,9 +220,10 @@ export default function CommunityDetail() {
                       {member.role}
                     </p>
                   </div>
-                </div>
-              ) : null
-            ))}
+                  </div>
+                ) : null
+              ))
+            )}
           </div>
         </div>
       )}
@@ -199,9 +263,42 @@ export default function CommunityDetail() {
           </div>
         </div>
 
-        {/* Chat Component */}
+        {/* Chat Component or Join Prompt */}
         <div className="flex-1 p-6">
-          <CommunityChat communityId={communityId} userRole={userRole} />
+          {!isMember ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-md">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Lock className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                  Join to Start Chatting
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-8">
+                  Become a member to view messages, participate in discussions, and connect with {members.length} members.
+                </p>
+                <button
+                  onClick={handleJoinCommunity}
+                  disabled={joining}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                >
+                  {joining ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      <span>Joining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      <span>Join Community</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <CommunityChat communityId={communityId} userRole={userRole} />
+          )}
         </div>
       </div>
     </div>

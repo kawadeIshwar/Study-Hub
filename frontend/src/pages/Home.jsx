@@ -54,15 +54,23 @@ const Home = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={() => (window.location.href = "/upload")}
-                  className="group px-8 py-4 bg-white text-indigo-600 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
+                  className="group px-10 py-4 bg-white text-indigo-600 rounded-2xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
                 >
                   <Upload className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                   <span>Upload Notes</span>
                 </button>
                 
                 <button
+                  onClick={() => (window.location.href = "/communities")}
+                  className="group px-10 py-4 bg-yellow-400 text-indigo-900 rounded-2xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
+                >
+                  <Users className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <span>Explore Communities</span>
+                </button>
+                
+                <button
                   onClick={() => (window.location.href = "/notes")}
-                  className="group px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all duration-300 flex items-center justify-center gap-3"
+                  className="group px-10 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-2xl font-bold text-base hover:bg-white/20 transition-all duration-300 flex items-center justify-center gap-3"
                 >
                   <Search className="w-6 h-6 group-hover:scale-125 transition-transform" />
                   <span>Explore Notes</span>

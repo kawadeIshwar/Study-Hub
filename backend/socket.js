@@ -273,6 +273,102 @@ const setupSocket = (server) => {
       }
     });
 
+    // Edit message
+    socket.on('edit-message', async (data) => {
+      try {
+        const { messageId, content } = data;
+        
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Check if user is the message sender
+        if (message.sender.toString() !== socket.userId) {
+          socket.emit('error', { message: 'You can only edit your own messages' });
+          return;
+        }
+
+        message.content = content;
+        message.isEdited = true;
+        message.editedAt = new Date();
+        await message.save();
+        await message.populate('sender', 'name');
+
+        // Broadcast edited message to all members in the community
+        io.to(`community-${message.community}`).emit('message-edited', {
+          messageId,
+          content,
+          editedAt: message.editedAt,
+          message
+        });
+
+      } catch (error) {
+        console.error('Error editing message:', error);
+        socket.emit('error', { message: 'Failed to edit message' });
+      }
+    });
+
+    // Add reaction to message
+    socket.on('add-reaction', async (data) => {
+      try {
+        const { messageId, emoji } = data;
+        
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Check if user is a member
+        const membership = await CommunityMember.findOne({
+          community: message.community,
+          user: socket.userId,
+          status: 'active'
+        });
+
+        if (!membership) {
+          socket.emit('error', { message: 'Not authorized to react to messages' });
+          return;
+        }
+
+        // Find existing reaction
+        const existingReaction = message.reactions.find(r => r.emoji === emoji);
+        
+        if (existingReaction) {
+          // Toggle reaction
+          const userIndex = existingReaction.users.findIndex(id => id.toString() === socket.userId);
+          if (userIndex > -1) {
+            existingReaction.users.splice(userIndex, 1);
+            if (existingReaction.users.length === 0) {
+              message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+            }
+          } else {
+            existingReaction.users.push(socket.userId);
+          }
+        } else {
+          // Add new reaction
+          message.reactions.push({
+            emoji,
+            users: [socket.userId]
+          });
+        }
+
+        await message.save();
+
+        // Broadcast reaction update to all members in the community
+        io.to(`community-${message.community}`).emit('reaction-updated', {
+          messageId,
+          reactions: message.reactions
+        });
+
+      } catch (error) {
+        console.error('Error adding reaction:', error);
+        socket.emit('error', { message: 'Failed to add reaction' });
+      }
+    });
+
     // Typing indicator
     socket.on('typing', (data) => {
       const { communityId, isTyping } = data;

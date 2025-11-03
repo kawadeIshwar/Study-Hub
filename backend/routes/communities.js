@@ -5,6 +5,7 @@ import Message from '../models/Message.js';
 import Poll from '../models/Poll.js';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
+import optionalAuth from '../middleware/optionalAuth.js';
 import cloudinary from '../utils/cloudinary.js';
 import multer from 'multer';
 import { cacheMiddleware, invalidateCache, CACHE_DURATION } from '../middleware/cache.js';
@@ -15,8 +16,8 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Get all communities with search and filter
-router.get('/', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
+// Get all communities with search and filter (accessible to all users)
+router.get('/', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
     const { search, tags, page = 1, limit = 12 } = req.query;
     const skip = (page - 1) * limit;
@@ -40,13 +41,16 @@ router.get('/', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) =
 
     const total = await Community.countDocuments(query);
 
-    // Get user's joined communities
-    const userCommunities = await CommunityMember.find({ 
-      user: req.user.id, 
-      status: 'active' 
-    }).select('community');
-    
-    const joinedCommunityIds = userCommunities.map(cm => cm.community.toString());
+    // Get user's joined communities if user is logged in
+    let joinedCommunityIds = [];
+    if (req.user && req.user.id) {
+      const userCommunities = await CommunityMember.find({ 
+        user: req.user.id, 
+        status: 'active' 
+      }).select('community');
+      
+      joinedCommunityIds = userCommunities.map(cm => cm.community.toString());
+    }
 
     const communitiesWithMembership = communities.map(community => ({
       ...community.toObject(),
@@ -68,8 +72,8 @@ router.get('/', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) =
   }
 });
 
-// Get single community details
-router.get('/:id', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
+// Get single community details (accessible to all users)
+router.get('/:id', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
     const community = await Community.findById(req.params.id)
       .populate('createdBy', 'name');
@@ -78,12 +82,15 @@ router.get('/:id', auth, cacheMiddleware(CACHE_DURATION.medium), async (req, res
       return res.status(404).json({ msg: 'Community not found' });
     }
 
-    // Check if user is a member
-    const membership = await CommunityMember.findOne({
-      community: req.params.id,
-      user: req.user.id,
-      status: 'active'
-    });
+    // Check if user is a member (only if logged in)
+    let membership = null;
+    if (req.user && req.user.id) {
+      membership = await CommunityMember.findOne({
+        community: req.params.id,
+        user: req.user.id,
+        status: 'active'
+      });
+    }
 
     res.json({
       ...community.toObject(),

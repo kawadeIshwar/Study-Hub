@@ -15,6 +15,90 @@ const filter = new Filter();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Get pinned messages - MUST come before /:communityId route
+router.get('/:communityId/pinned', auth, async (req, res) => {
+  try {
+    // Check if user is a member
+    const membership = await CommunityMember.findOne({
+      community: req.params.communityId,
+      user: req.user.id,
+      status: 'active'
+    });
+
+    if (!membership) {
+      return res.status(403).json({ msg: 'You must be a member to view pinned messages' });
+    }
+
+    const pinnedMessages = await Message.find({
+      community: req.params.communityId,
+      isPinned: true
+    })
+    .populate('sender', 'name')
+    .sort({ createdAt: -1 });
+
+    res.json(pinnedMessages);
+  } catch (error) {
+    console.error('Error fetching pinned messages:', error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Search messages in a community
+router.get('/:communityId/search', auth, async (req, res) => {
+  try {
+    const { query, page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ msg: 'Search query is required' });
+    }
+
+    // Check if user is a member
+    const membership = await CommunityMember.findOne({
+      community: req.params.communityId,
+      user: req.user.id,
+      status: 'active'
+    });
+
+    if (!membership) {
+      return res.status(403).json({ msg: 'You must be a member to search messages' });
+    }
+
+    const messages = await Message.find({
+      community: req.params.communityId,
+      $or: [
+        { content: { $regex: query, $options: 'i' } },
+        { originalContent: { $regex: query, $options: 'i' } }
+      ]
+    })
+    .populate('sender', 'name')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+    const total = await Message.countDocuments({
+      community: req.params.communityId,
+      $or: [
+        { content: { $regex: query, $options: 'i' } },
+        { originalContent: { $regex: query, $options: 'i' } }
+      ]
+    });
+
+    res.json({
+      messages,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error searching messages:', error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // Get messages for a community
 router.get('/:communityId', auth, async (req, res) => {
   try {
@@ -299,30 +383,63 @@ router.post('/:messageId/react', auth, async (req, res) => {
   }
 });
 
-// Get pinned messages
-router.get('/:communityId/pinned', auth, async (req, res) => {
+// Edit message (message sender only)
+router.put('/:messageId/edit', auth, async (req, res) => {
   try {
-    // Check if user is a member
+    const { content } = req.body;
+    
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ msg: 'Content is required' });
+    }
+
+    const message = await Message.findById(req.params.messageId);
+    if (!message) {
+      return res.status(404).json({ msg: 'Message not found' });
+    }
+
+    // Only sender can edit their message
+    if (message.sender.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'You can only edit your own messages' });
+    }
+
+    // Apply profanity filter if enabled
+    const community = await Community.findById(message.community);
     const membership = await CommunityMember.findOne({
-      community: req.params.communityId,
+      community: message.community,
       user: req.user.id,
       status: 'active'
     });
 
-    if (!membership) {
-      return res.status(403).json({ msg: 'You must be a member to view pinned messages' });
+    let messageContent = content;
+    let isProfanityFiltered = false;
+
+    if (community.settings.profanityFilter) {
+      const moderationResult = moderateMessage(content, membership.role);
+      messageContent = moderationResult.text;
+      isProfanityFiltered = moderationResult.moderated || moderationResult.flagged;
+      
+      if (moderationResult.moderated && membership.role === 'member') {
+        return res.status(400).json({ 
+          msg: 'Message contains inappropriate content and has been filtered',
+          filteredContent: messageContent
+        });
+      }
     }
 
-    const pinnedMessages = await Message.find({
-      community: req.params.communityId,
-      isPinned: true
-    })
-    .populate('sender', 'name')
-    .sort({ createdAt: -1 });
+    message.content = messageContent;
+    message.originalContent = content;
+    message.isProfanityFiltered = isProfanityFiltered;
+    message.isEdited = true;
+    message.editedAt = new Date();
+    await message.save();
 
-    res.json(pinnedMessages);
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'name')
+      .populate('replies');
+
+    res.json({ msg: 'Message updated successfully', message: populatedMessage });
   } catch (error) {
-    console.error('Error fetching pinned messages:', error);
+    console.error('Error editing message:', error);
     res.status(500).json({ msg: 'Server error' });
   }
 });

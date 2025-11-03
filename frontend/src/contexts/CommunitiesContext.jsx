@@ -88,7 +88,7 @@ function communitiesReducer(state, action) {
 export function CommunitiesProvider({ children }) {
   const [state, dispatch] = useReducer(communitiesReducer, initialState);
 
-  // Fetch all communities
+  // Fetch all communities (accessible to all users)
   const fetchCommunities = async (search = '', tags = '') => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -96,52 +96,11 @@ export function CommunitiesProvider({ children }) {
       if (search) params.append('search', search);
       if (tags) params.append('tags', tags);
       
-      try {
-        // Try to fetch from API first
-        const response = await api.get(`/communities?${params}`);
-        dispatch({ type: 'SET_COMMUNITIES', payload: response.data.communities });
-      } catch (apiError) {
-        // If API fails, use local data
-        console.log('Using local community data instead of API');
-        
-        // Import local data
-        const { default: localCommunities } = await import('../data/communities.js');
-        
-        // Filter based on search and tags if provided
-        let filteredCommunities = [...localCommunities];
-        
-        if (search) {
-          const searchLower = search.toLowerCase();
-          filteredCommunities = filteredCommunities.filter(community => 
-            community.name.toLowerCase().includes(searchLower) || 
-            community.description.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        if (tags) {
-          const tagArray = tags.split(',');
-          filteredCommunities = filteredCommunities.filter(community => 
-            community.tags.some(tag => tagArray.includes(tag))
-          );
-        }
-        
-        // Add _id field to each community for compatibility
-        filteredCommunities = filteredCommunities.map((community, index) => ({
-          ...community,
-          _id: `local-community-${index}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          stats: community.stats || {
-            totalMembers: Math.floor(Math.random() * 100) + 5,
-            totalMessages: Math.floor(Math.random() * 500),
-            lastActivity: new Date().toISOString()
-          }
-        }));
-        
-        dispatch({ type: 'SET_COMMUNITIES', payload: filteredCommunities });
-      }
+      const response = await api.get(`/communities?${params}`);
+      dispatch({ type: 'SET_COMMUNITIES', payload: response.data.communities });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to fetch communities' });
+      console.error('Error fetching communities:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.response?.data?.msg || error.message || 'Failed to fetch communities' });
     }
   };
 
@@ -188,15 +147,16 @@ export function CommunitiesProvider({ children }) {
     }
   };
 
-  // Fetch community details
+  // Fetch community details (accessible to all users)
   const fetchCommunityDetails = async (communityId) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const response = await api.get(`/communities/${communityId}`);
-      dispatch({ type: 'SET_CURRENT_COMMUNITY', payload: response.data.community });
-      return response.data.community;
+      dispatch({ type: 'SET_CURRENT_COMMUNITY', payload: response.data });
+      return response.data;
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.response?.data?.message || 'Failed to fetch community details' });
+      console.error('Error fetching community details:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.response?.data?.msg || error.message || 'Failed to fetch community details' });
       throw error;
     }
   };

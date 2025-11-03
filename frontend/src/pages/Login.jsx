@@ -12,8 +12,8 @@ const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Get redirect path (or go to home if none)
-  const redirectPath = new URLSearchParams(location.search).get('redirect') || '/';
+  // Get redirect path from state, query params, or default to home
+  const redirectPath = location.state?.from || new URLSearchParams(location.search).get('redirect') || '/';
 
 // Handle Login
 const handleLogin = async (e) => {

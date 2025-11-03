@@ -30,10 +30,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only redirect on 401 if we have a token (authenticated request that failed)
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
       // Token expired or invalid
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect if not accessing public endpoints
+      const publicEndpoints = ['/communities', '/auth/'];
+      const isPublicEndpoint = publicEndpoints.some(endpoint => 
+        error.config.url.includes(endpoint)
+      );
+      if (!isPublicEndpoint) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
