@@ -15,6 +15,11 @@ const noteSchema = new mongoose.Schema({
     ref: 'User', // ✅ Refers to User model
     required: true,
   },
+  uploaderRole: {
+    type: String,
+    enum: ['student', 'teacher'],
+    required: true,
+  },
   likes: { type: Number, default: 0 },
   date: { type: Date, default: Date.now },
 });

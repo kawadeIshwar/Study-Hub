@@ -89,12 +89,13 @@ export function CommunitiesProvider({ children }) {
   const [state, dispatch] = useReducer(communitiesReducer, initialState);
 
   // Fetch all communities (accessible to all users)
-  const fetchCommunities = async (search = '', tags = '') => {
+  const fetchCommunities = async (search = '', tags = '', creatorRole = '') => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (tags) params.append('tags', tags);
+      if (creatorRole) params.append('creatorRole', creatorRole);
       
       const response = await api.get(`/communities?${params}`);
       dispatch({ type: 'SET_COMMUNITIES', payload: response.data.communities });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Pin, Search, Settings, Bell, Hash, UserPlus, Lock } from 'lucide-react';
+import { Users, Pin, Search, Settings, Bell, Hash, UserPlus, Lock, Clock } from 'lucide-react';
 import CommunityChat from '../components/CommunityChat';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -19,6 +19,7 @@ export default function CommunityDetail() {
   const [membersLoading, setMembersLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [isMember, setIsMember] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [joining, setJoining] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState(new Set());
   
@@ -52,6 +53,7 @@ export default function CommunityDetail() {
           setCurrentCommunity(cachedCommunity);
           setUserRole(cachedCommunity.userRole);
           setIsMember(cachedCommunity.isMember || false);
+          setIsPending(cachedCommunity.isPending || false);
           setLoading(false); // Show UI immediately with cached data
         }
 
@@ -64,6 +66,7 @@ export default function CommunityDetail() {
         setCurrentCommunity(communityRes.data);
         setUserRole(communityRes.data.userRole);
         setIsMember(communityRes.data.isMember || false);
+        setIsPending(communityRes.data.isPending || false);
         setLoading(false); // Show UI as soon as we have community details
         
       } catch (error) {
@@ -120,16 +123,26 @@ export default function CommunityDetail() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setIsMember(true);
-      setUserRole('member');
-      toast.success('Successfully joined community! 🎉');
+      // Check if approval is required
+      if (response.data.requiresApproval) {
+        setIsPending(true);
+        setIsMember(false);
+        toast.info('📨 Join request sent! Waiting for teacher approval.', {
+          autoClose: 5000
+        });
+      } else {
+        setIsMember(true);
+        setUserRole('member');
+        setIsPending(false);
+        toast.success('Successfully joined community! 🎉');
+      }
       
       // Refresh community data
       const communityRes = await axios.get(`${API_URL}/api/communities/${communityId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       setCurrentCommunity(communityRes.data);
+      
       cacheService.set(`communities_${communityId}`, communityRes.data);
       
     } catch (error) {
@@ -268,32 +281,46 @@ export default function CommunityDetail() {
           {!isMember ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-md">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Lock className="w-10 h-10 text-white" />
+                <div className={`w-20 h-20 ${isPending ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-blue-500 to-purple-600'} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                  {isPending ? (
+                    <Clock className="w-10 h-10 text-white animate-pulse" />
+                  ) : (
+                    <Lock className="w-10 h-10 text-white" />
+                  )}
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                  Join to Start Chatting
+                  {isPending ? 'Request Pending' : 'Join to Start Chatting'}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-8">
-                  Become a member to view messages, participate in discussions, and connect with {members.length} members.
+                  {isPending 
+                    ? 'Your join request is waiting for teacher approval. You will be notified once approved.' 
+                    : `Become a member to view messages, participate in discussions, and connect with ${members.length} members.`
+                  }
                 </p>
-                <button
-                  onClick={handleJoinCommunity}
-                  disabled={joining}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-                >
-                  {joining ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      <span>Joining...</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-5 h-5" />
-                      <span>Join Community</span>
-                    </>
-                  )}
-                </button>
+                {isPending ? (
+                  <div className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow-lg">
+                    <Clock className="w-5 h-5 animate-pulse" />
+                    <span>Waiting for Approval</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleJoinCommunity}
+                    disabled={joining}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                  >
+                    {joining ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        <span>Sending Request...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-5 h-5" />
+                        <span>Request to Join</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           ) : (

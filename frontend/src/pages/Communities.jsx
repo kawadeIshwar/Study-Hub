@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCommunities } from '../contexts/CommunitiesContext';
-import { Search, Users, Calendar, Plus, Filter, TrendingUp, BookOpen, Code, Calculator, Globe, Beaker, MessageCircle, Shield } from 'lucide-react';
+import { Search, Users, Calendar, Plus, Filter, TrendingUp, BookOpen, Code, Calculator, Globe, Beaker, MessageCircle, Shield, GraduationCap, UserCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const categoryIcons = {
@@ -23,6 +23,7 @@ export default function Communities() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [activeSection, setActiveSection] = useState('all'); // 'all', 'teacher', 'student'
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCommunity, setNewCommunity] = useState({
     name: '',
@@ -32,8 +33,9 @@ export default function Communities() {
   });
 
   useEffect(() => {
-    fetchCommunities(searchTerm, selectedTags.join(','));
-  }, [searchTerm, selectedTags]);
+    const creatorRole = activeSection === 'all' ? '' : activeSection;
+    fetchCommunities(searchTerm, selectedTags.join(','), creatorRole);
+  }, [searchTerm, selectedTags, activeSection]);
 
   const handleCommunityClick = (e, communityId) => {
     const token = localStorage.getItem('token');
@@ -61,8 +63,55 @@ export default function Communities() {
 
   const handleCreateCommunity = async (e) => {
     e.preventDefault();
+    
+    // Validate community name
+    if (!newCommunity.name || newCommunity.name.trim() === '') {
+      toast.error('Community name is required and cannot be empty');
+      return;
+    }
+    
+    if (newCommunity.name.trim().length < 3) {
+      toast.error('Community name must be at least 3 characters long');
+      return;
+    }
+    
+    if (newCommunity.name.trim().length > 50) {
+      toast.error('Community name must not exceed 50 characters');
+      return;
+    }
+    
+    // Validate description
+    if (!newCommunity.description || newCommunity.description.trim() === '') {
+      toast.error('Description is required and cannot be empty');
+      return;
+    }
+    
+    if (newCommunity.description.trim().length < 10) {
+      toast.error('Description must be at least 10 characters long');
+      return;
+    }
+    
+    if (newCommunity.description.trim().length > 300) {
+      toast.error('Description must not exceed 300 characters');
+      return;
+    }
+    
+    // Validate tags
+    if (!newCommunity.tags || newCommunity.tags.length === 0) {
+      toast.error('Please select at least one tag');
+      return;
+    }
+    
     try {
-      await createCommunity(newCommunity);
+      // Trim data before submission
+      const trimmedCommunity = {
+        name: newCommunity.name.trim(),
+        description: newCommunity.description.trim(),
+        tags: newCommunity.tags,
+        isPrivate: newCommunity.isPrivate
+      };
+      
+      await createCommunity(trimmedCommunity);
       setShowCreateModal(false);
       setNewCommunity({ name: '', description: '', tags: [], isPrivate: false });
       fetchCommunities();
@@ -240,6 +289,54 @@ export default function Communities() {
           )}
         </div>
 
+        {/* Section Tabs */}
+        <div className="flex justify-center mb-8 animate-fadeIn delay-300">
+          <div className="inline-flex bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-3xl p-2 shadow-2xl border border-gray-700/50 dark:border-gray-600/50">
+            <button
+              onClick={() => setActiveSection('all')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[200px] justify-center ${
+                activeSection === 'all'
+                  ? 'bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white shadow-2xl shadow-teal-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-teal-400 dark:hover:text-teal-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <Users className="w-6 h-6" />
+              <span className="flex items-center gap-2">
+                All Communities
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeSection === 'all' 
+                    ? 'bg-white/30 text-white' 
+                    : 'bg-gray-700 text-gray-300'
+                }`}>
+                  {communities.length}
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveSection('teacher')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[200px] justify-center ${
+                activeSection === 'teacher'
+                  ? 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-2xl shadow-blue-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-blue-400 dark:hover:text-blue-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <GraduationCap className="w-6 h-6" />
+              <span>By Teachers</span>
+            </button>
+            <button
+              onClick={() => setActiveSection('student')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[200px] justify-center ${
+                activeSection === 'student'
+                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-2xl shadow-emerald-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-emerald-400 dark:hover:text-emerald-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <UserCircle className="w-6 h-6" />
+              <span>By Students</span>
+            </button>
+          </div>
+        </div>
+
         {/* Communities Grid */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-8">
@@ -365,57 +462,78 @@ export default function Communities() {
 
       {/* Create Community Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn overflow-y-auto">
-          <div className="relative bg-white dark:bg-gray-800 rounded-3xl max-w-3xl w-full p-10 my-8 shadow-2xl border border-gray-200 dark:border-gray-700 animate-scaleIn">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-t-3xl"></div>
-            
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-4xl font-black bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
-                Create New Community
-              </h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-              >
-                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="relative bg-white dark:bg-gray-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-gray-700 animate-scaleIn">
+            <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 rounded-t-3xl border-b border-gray-200 dark:border-gray-700 px-8 py-6">
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-t-3xl"></div>
+              
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                    Create New Community
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    Build your study group and connect with peers
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleCreateCommunity} className="space-y-8">
+            
+            <form onSubmit={handleCreateCommunity} className="px-8 py-6 space-y-6">
               <div>
-                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  Community Name *
+                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  <span className="text-teal-600 dark:text-teal-400">*</span>
+                  Community Name
                 </label>
                 <input
                   type="text"
                   value={newCommunity.name}
                   onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })}
-                  className="w-full px-5 py-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300 font-semibold"
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 dark:bg-gray-700 dark:text-white transition-all duration-300"
                   required
+                  minLength={3}
                   placeholder="e.g., DSA Study Group"
+                  maxLength={50}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {newCommunity.name.length}/50 characters
+                </p>
               </div>
               
               <div>
-                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  Description *
+                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  <span className="text-teal-600 dark:text-teal-400">*</span>
+                  Description
                 </label>
                 <textarea
                   value={newCommunity.description}
                   onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })}
-                  className="w-full px-5 py-4 text-base border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300 resize-none"
-                  rows={5}
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 dark:bg-gray-700 dark:text-white transition-all duration-300 resize-none"
+                  rows={4}
                   required
+                  minLength={10}
                   placeholder="Describe what this community is about... Share the goals, topics, and what members can expect."
+                  maxLength={300}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {newCommunity.description.length}/300 characters
+                </p>
               </div>
 
               <div>
-                <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  Tags (select up to 3) *
+                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                  <span className="text-teal-600 dark:text-teal-400">*</span>
+                  Tags (select up to 3)
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {predefinedTags.map(tag => (
                     <button
                       key={tag}
@@ -428,9 +546,9 @@ export default function Communities() {
                             : newCommunity.tags;
                         setNewCommunity({ ...newCommunity, tags: newTags });
                       }}
-                      className={`px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      className={`px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 text-center ${
                         newCommunity.tags.includes(tag)
-                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg ring-2 ring-teal-500 ring-offset-2 dark:ring-offset-gray-800'
+                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg ring-2 ring-teal-500 ring-offset-2 dark:ring-offset-gray-800 scale-105'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'
                       }`}
                     >
@@ -478,21 +596,23 @@ export default function Communities() {
                 </label>
               </div>
 
-              <div className="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-2xl text-base font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-105"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newCommunity.name || !newCommunity.description || newCommunity.tags.length === 0}
-                  className="flex-1 px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl text-base font-bold hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
-                >
-                  Create Community
-                </button>
+              <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-6 pb-2 -mx-8 px-8 mt-8 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-2xl text-base font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!newCommunity.name || !newCommunity.description || newCommunity.tags.length === 0}
+                    className="flex-1 px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl text-base font-bold hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300"
+                  >
+                    Create Community
+                  </button>
+                </div>
               </div>
             </form>
           </div>

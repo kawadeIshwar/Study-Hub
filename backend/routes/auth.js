@@ -5,7 +5,7 @@ import User from '../models/User.js'; // Import User model (MongoDB schema)
 
 const router = express.Router();      // Create a router object
 
-// ✅ SIGNUP API
+// ✅ SIGNUP API (Student)
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body; // Get data from request body
@@ -15,12 +15,41 @@ router.post('/signup', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10); // Hash the password
 
-    const user = new User({ name, email, password: hashed }); // Create user
+    const user = new User({ name, email, password: hashed, role: 'student' }); // Create user
     await user.save(); // Save user to DB
 
     res.status(201).json({ msg: 'Registered successfully' }); // Send success response
   } catch (err) {
     res.status(500).json({ error: err.message }); // Handle errors
+  }
+});
+
+// ✅ TEACHER SIGNUP API
+router.post('/signup/teacher', async (req, res) => {
+  try {
+    const { name, email, password, qualification, specialization, experience, institution, subjects } = req.body;
+
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ msg: 'User already exists' });
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = new User({ 
+      name, 
+      email, 
+      password: hashed, 
+      role: 'teacher',
+      qualification,
+      specialization,
+      experience,
+      institution,
+      subjects
+    });
+    await user.save();
+
+    res.status(201).json({ msg: 'Teacher registered successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -35,12 +64,12 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password); // Check password
     if (!match) return res.status(400).json({ msg: 'Wrong password' });
 
-    const token = jwt.sign({ id: user._id, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, name: user.name, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
     // Create token that expires in 1 day
 
     res.json({ 
       token, // Return token
-      user: { id: user._id, name: user.name, email: user.email } // Return user info
+      user: { id: user._id, name: user.name, email: user.email, role: user.role } // Return user info
     });
   } catch (err) {
     res.status(500).json({ error: err.message }); // Handle errors

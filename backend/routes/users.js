@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Note from '../models/Note.js';
 import CommunityMember from '../models/CommunityMember.js';
+import Message from '../models/Message.js';
 import auth from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 
@@ -15,21 +16,32 @@ router.get('/profile', auth, async (req, res) => {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Get user statistics
-    const [notesCount, communitiesCount] = await Promise.all([
-      Note.countDocuments({ uploader: req.user.id }),
-      CommunityMember.countDocuments({ user: req.user.id, status: 'active' })
-    ]);
-
-    res.json({
-      user,
-      stats: {
-        notesUploaded: notesCount,
-        communitiesJoined: communitiesCount
-      }
-    });
+    res.json(user);
   } catch (error) {
     console.error('Error fetching profile:', error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Get user stats
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const [notesCount, communitiesCount, messagesCount] = await Promise.all([
+      Note.countDocuments({ uploader: req.user.id }),
+      CommunityMember.countDocuments({ user: req.user.id, status: 'active' }),
+      Message.countDocuments({ sender: req.user.id })
+    ]);
+
+    const totalContributions = notesCount + messagesCount;
+
+    res.json({
+      notesUploaded: notesCount,
+      communitiesJoined: communitiesCount,
+      messagesSent: messagesCount,
+      totalContributions
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
     res.status(500).json({ msg: 'Server error' });
   }
 });
@@ -37,22 +49,40 @@ router.get('/profile', auth, async (req, res) => {
 // Update user profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, email, currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Update name and email if provided
-    if (name) user.name = name;
-    if (email) {
-      // Check if email is already in use
-      const emailExists = await User.findOne({ email, _id: { $ne: req.user.id } });
-      if (emailExists) {
-        return res.status(400).json({ msg: 'Email already in use' });
-      }
-      user.email = email;
+    // Common fields for all users
+    const { name, phone, bio, currentPassword, newPassword } = req.body;
+    
+    if (name) user.name = name.trim();
+    if (phone) user.phone = phone.trim();
+    if (bio !== undefined) user.bio = bio.trim();
+
+    // Student-specific fields
+    if (user.role === 'student') {
+      const { college, course, department, year, semester, rollNumber } = req.body;
+      
+      if (college !== undefined) user.college = college.trim();
+      if (course !== undefined) user.course = course.trim();
+      if (department !== undefined) user.department = department.trim();
+      if (year !== undefined) user.year = year;
+      if (semester !== undefined) user.semester = semester.trim();
+      if (rollNumber !== undefined) user.rollNumber = rollNumber.trim();
+    }
+
+    // Teacher-specific fields
+    if (user.role === 'teacher') {
+      const { qualification, specialization, institution, experience, subjects } = req.body;
+      
+      if (qualification !== undefined) user.qualification = qualification.trim();
+      if (specialization !== undefined) user.specialization = specialization.trim();
+      if (institution !== undefined) user.institution = institution.trim();
+      if (experience !== undefined) user.experience = experience;
+      if (subjects !== undefined) user.subjects = subjects;
     }
 
     // Update password if provided
@@ -70,7 +100,10 @@ router.put('/profile', auth, async (req, res) => {
     }
 
     await user.save();
-    res.json({ msg: 'Profile updated successfully', user: { id: user._id, name: user.name, email: user.email } });
+    
+    // Return user without password
+    const updatedUser = await User.findById(user._id).select('-password');
+    res.json(updatedUser);
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ msg: 'Server error' });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';   // Hooks for state and side effects
-import { Link } from 'react-router-dom';       // For navigation links
+import { Link, useLocation } from 'react-router-dom';       // For navigation links
 import { FaBars, FaTimes } from 'react-icons/fa'; // Icons for menu toggle
-import { Users, MessageCircle } from 'lucide-react'; // Community icons
+import { Users, MessageCircle, GraduationCap, LayoutDashboard, UserCircle } from 'lucide-react'; // Community icons
 import { toast } from 'react-toastify';        // For toast notifications
 import DarkModeToggle from './DarkModeToggle';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,12 +9,21 @@ import 'react-toastify/dist/ReactToastify.css';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); // For mobile menu open/close
   const [token, setToken] = useState(localStorage.getItem('token')); // Get token from localStorage
+  const [userRole, setUserRole] = useState(null); // Get user role
+  const location = useLocation(); // Get current location/path
 
   useEffect(() => {
     const handleStorageChange = () => {
       const savedToken = localStorage.getItem('token');
       setToken(savedToken);  // Update token if changed elsewhere
+      
+      // Get user role from localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      setUserRole(user.role || null);
     };
+
+    // Initial load
+    handleStorageChange();
 
     window.addEventListener('storage', handleStorageChange); // Listen for storage changes
 
@@ -27,7 +36,9 @@ const Navbar = () => {
     toast.success('Logout successful!');  // Show logout message
     setTimeout(() => {
       localStorage.removeItem('token');   // Remove token from storage
+      localStorage.removeItem('user');    // Remove user from storage
       setToken(null);                     // Clear token state
+      setUserRole(null);                  // Clear user role state
       window.location.href = '/login';    // Redirect to login page
     }, 1500);  // Delay to show toast
   };
@@ -58,13 +69,29 @@ const Navbar = () => {
 
       {/* Desktop Links (shown only on medium screens and up) */}
       <div className="space-x-2 hidden md:flex items-center">
-        <NavItem to="/" text="Home" />
-        <NavItem to="/communities" text="Communities" icon={<Users className="w-4 h-4" />} />
-        <NavItem to="/upload" text="Upload" />
-        <NavItem to="/notes" text="Explore" />
+        <NavItem to="/" text="Home" currentPath={location.pathname} />
+        <NavItem to="/communities" text="Communities" icon={<Users className="w-4 h-4" />} currentPath={location.pathname} />
+        <NavItem to="/upload" text="Upload" currentPath={location.pathname} />
+        <NavItem to="/notes" text="Explore" currentPath={location.pathname} />
+        {token && userRole === 'teacher' && (
+          <NavItem 
+            to="/teacher/dashboard" 
+            text="Dashboard" 
+            icon={<LayoutDashboard className="w-4 h-4" />}
+            currentPath={location.pathname}
+          />
+        )}
+        {token && (
+          <NavItem 
+            to="/profile" 
+            text="Profile" 
+            icon={<UserCircle className="w-4 h-4" />}
+            currentPath={location.pathname}
+          />
+        )}
         {!token ? (
           <>
-            <NavItem to="/login" text="Login" />
+            <NavItem to="/login" text="Login" currentPath={location.pathname} />
             <Link 
               to="/signup" 
               className="ml-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center gap-1"
@@ -103,14 +130,32 @@ const Navbar = () => {
           isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-5 pointer-events-none'
         }`}
       >
-        <NavItem to="/" text="Home" onClick={toggleMenu} />
-        <NavItem to="/communities" text="Communities" onClick={toggleMenu} icon={<Users className="w-4 h-4" />} />
-        <NavItem to="/upload" text="Upload" onClick={toggleMenu} />
-        <NavItem to="/notes" text="Explore" onClick={toggleMenu} />
+        <NavItem to="/" text="Home" onClick={toggleMenu} currentPath={location.pathname} />
+        <NavItem to="/communities" text="Communities" onClick={toggleMenu} icon={<Users className="w-4 h-4" />} currentPath={location.pathname} />
+        <NavItem to="/upload" text="Upload" onClick={toggleMenu} currentPath={location.pathname} />
+        <NavItem to="/notes" text="Explore" onClick={toggleMenu} currentPath={location.pathname} />
+        {token && userRole === 'teacher' && (
+          <NavItem 
+            to="/teacher/dashboard" 
+            text="Dashboard" 
+            onClick={toggleMenu}
+            icon={<LayoutDashboard className="w-4 h-4" />}
+            currentPath={location.pathname}
+          />
+        )}
+        {token && (
+          <NavItem 
+            to="/profile" 
+            text="Profile" 
+            onClick={toggleMenu}
+            icon={<UserCircle className="w-4 h-4" />}
+            currentPath={location.pathname}
+          />
+        )}
         {!token ? (
           <>
-            <NavItem to="/login" text="Login" onClick={toggleMenu} />
-            <NavItem to="/signup" text="Sign up" onClick={toggleMenu} />
+            <NavItem to="/login" text="Login" onClick={toggleMenu} currentPath={location.pathname} />
+            <NavItem to="/signup" text="Sign up" onClick={toggleMenu} currentPath={location.pathname} />
           </>
         ) : (
           <button
@@ -132,19 +177,34 @@ const Navbar = () => {
 };
 
 // ✅ Nav item component for links
-const NavItem = ({ to, text, onClick, icon }) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="group relative px-4 py-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 flex items-center gap-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-  >
-    {icon && <span className="text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300">{icon}</span>}
-    <span className="relative">
-      {text}
-      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 group-hover:w-full"></span>
-    </span>
-  </Link>
-);
+const NavItem = ({ to, text, onClick, icon, currentPath }) => {
+  // Check if current page matches this link
+  // For home page ("/"), only match exact path
+  // For other pages, match if current path starts with the link path
+  const isActive = to === '/' 
+    ? currentPath === '/' 
+    : currentPath === to || currentPath.startsWith(to + '/');
+  
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="group relative px-4 py-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 flex items-center gap-2"
+    >
+      {icon && (
+        <span className="text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300">
+          {icon}
+        </span>
+      )}
+      <span className="relative">
+        {text}
+        <span className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-300 ${
+          isActive ? 'w-full' : 'w-0 group-hover:w-full'
+        }`}></span>
+      </span>
+    </Link>
+  );
+};
 
 export default Navbar;
 

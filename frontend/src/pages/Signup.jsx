@@ -27,11 +27,70 @@ const Signup = () => {
     });
   };
 
+  const validateForm = () => {
+    // Check for empty or whitespace-only fields
+    const requiredFields = ['name', 'email', 'password', 'college', 'course', 'department', 'semester', 'rollNumber', 'phone'];
+    
+    for (const field of requiredFields) {
+      if (!formData[field] || formData[field].trim() === '') {
+        toast.error(`${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required and cannot be empty`);
+        return false;
+      }
+    }
+
+    // Validate name (at least 2 characters)
+    if (formData.name.trim().length < 2) {
+      toast.error('Name must be at least 2 characters long');
+      return false;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast.error('Please enter a valid email address');
+      return false;
+    }
+
+    // Validate password (minimum 6 characters)
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return false;
+    }
+
+    // Validate phone number (10 digits)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phone.trim().replace(/[\s-]/g, ''))) {
+      toast.error('Phone number must be 10 digits');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    // Trim all fields before submission
+    const trimmedData = {
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+      college: formData.college.trim(),
+      course: formData.course.trim(),
+      department: formData.department.trim(),
+      year: formData.year,
+      semester: formData.semester.trim(),
+      rollNumber: formData.rollNumber.trim(),
+      phone: formData.phone.trim().replace(/[\s-]/g, ''),
+    };
+
     try {
-      const res = await authAPI.signup(formData);
+      const res = await authAPI.signup(trimmedData);
       toast.success('Registered successfully!');
       setFormData({ 
         name: '', 
@@ -144,6 +203,7 @@ const Signup = () => {
                   onChange={handleChange}
                   placeholder="Enter your full name"
                   required
+                  minLength="2"
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
                 />
               </div>
@@ -182,6 +242,7 @@ const Signup = () => {
                   onChange={handleChange}
                   placeholder="Create a strong password"
                   required
+                  minLength="6"
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300 font-semibold"
                 />
               </div>
@@ -193,10 +254,10 @@ const Signup = () => {
                 <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-emerald-600" />
                   Student Information
-                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
+                  <span className="text-xs font-bold text-red-600 dark:text-red-400">*Required</span>
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  Help us personalize your experience
+                  Please fill in all details below
                 </p>
               </div>
               
@@ -204,7 +265,7 @@ const Signup = () => {
                 {/* College/University */}
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                    College/University
+                    College/University <span className="text-red-600">*</span>
                   </label>
                   <div className="relative group">
                     <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
@@ -214,6 +275,7 @@ const Signup = () => {
                       value={formData.college}
                       onChange={handleChange}
                       placeholder="Enter your college name"
+                      required
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
                     />
                   </div>
@@ -224,7 +286,7 @@ const Signup = () => {
                   {/* Course */}
                   <div className="space-y-2">
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                      Course
+                      Course <span className="text-red-600">*</span>
                     </label>
                     <div className="relative group">
                       <BookOpen className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
@@ -234,6 +296,7 @@ const Signup = () => {
                         value={formData.course}
                         onChange={handleChange}
                         placeholder="e.g., B.Tech, B.Sc"
+                        required
                         className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
                       />
                     </div>
@@ -242,7 +305,7 @@ const Signup = () => {
                   {/* Department */}
                   <div className="space-y-2">
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                      Department
+                      Department <span className="text-red-600">*</span>
                     </label>
                     <div className="relative group">
                       <GraduationCap className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
@@ -252,6 +315,7 @@ const Signup = () => {
                         value={formData.department}
                         onChange={handleChange}
                         placeholder="e.g., Computer Science"
+                        required
                         className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
                       />
                     </div>
@@ -284,20 +348,32 @@ const Signup = () => {
                   </div>
 
                   {/* Semester */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                      Semester
+                      Semester <span className="text-red-600">*</span>
                     </label>
-                    <div className="relative group">
-                      <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
-                      <input
-                        type="text"
-                        name="semester"
-                        value={formData.semester}
-                        onChange={handleChange}
-                        placeholder="e.g., 1, 2, 3..."
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
-                      />
+                    <div className="grid grid-cols-4 gap-3">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                        <label
+                          key={sem}
+                          className={`relative flex items-center justify-center px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                            formData.semester === String(sem)
+                              ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold shadow-md'
+                              : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 dark:hover:border-emerald-500 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="semester"
+                            value={String(sem)}
+                            checked={formData.semester === String(sem)}
+                            onChange={handleChange}
+                            required
+                            className="absolute opacity-0"
+                          />
+                          <span className="text-lg font-semibold">{sem}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -307,7 +383,7 @@ const Signup = () => {
                   {/* Roll Number */}
                   <div className="space-y-2">
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                      Roll Number
+                      Roll Number <span className="text-red-600">*</span>
                     </label>
                     <div className="relative group">
                       <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
@@ -317,6 +393,7 @@ const Signup = () => {
                         value={formData.rollNumber}
                         onChange={handleChange}
                         placeholder="Enter roll number"
+                        required
                         className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
                       />
                     </div>
@@ -325,7 +402,7 @@ const Signup = () => {
                   {/* Phone Number */}
                   <div className="space-y-2">
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                      Phone Number
+                      Phone Number <span className="text-red-600">*</span>
                     </label>
                     <div className="relative group">
                       <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" />
@@ -335,6 +412,9 @@ const Signup = () => {
                         value={formData.phone}
                         onChange={handleChange}
                         placeholder="Enter phone number"
+                        required
+                        pattern="[0-9]{10}"
+                        title="Phone number must be 10 digits"
                         className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
                       />
                     </div>
@@ -366,13 +446,20 @@ const Signup = () => {
           </div>
 
           {/* Login Link */}
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <a
               href="/login"
               className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-300"
             >
               Sign in to your account
               <ArrowRight className="w-5 h-5" />
+            </a>
+            <p className="text-sm text-gray-500 dark:text-gray-400">or</p>
+            <a
+              href="/signup/teacher"
+              className="inline-block text-blue-600 dark:text-blue-400 font-bold hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-300"
+            >
+              Join as a Teacher
             </a>
           </div>
         </div>

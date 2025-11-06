@@ -13,7 +13,12 @@ const filter = new Filter();
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Get pinned messages - MUST come before /:communityId route
 router.get('/:communityId/pinned', auth, async (req, res) => {

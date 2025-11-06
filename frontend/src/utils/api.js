@@ -51,14 +51,28 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   signup: (userData) => api.post('/auth/signup', userData),
+  teacherSignup: (userData) => api.post('/auth/signup/teacher', userData),
 };
 
 export const notesAPI = {
   getAll: () => api.get('/upload/all'),
+  getByRole: (role) => api.get(`/upload/by-role/${role}`),
   upload: (formData) => api.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   delete: (id) => api.delete(`/notes/${id}`),
+};
+
+export const teacherAPI = {
+  getDashboardStats: () => api.get('/teachers/dashboard/stats'),
+  getNotes: () => api.get('/teachers/notes'),
+  getCommunities: () => api.get('/teachers/communities'),
+  getPendingRequests: (communityId) => api.get(`/teachers/communities/${communityId}/pending-requests`),
+  handleJoinRequest: (communityId, requestId, action) => 
+    api.put(`/teachers/communities/${communityId}/requests/${requestId}`, { action }),
+  getStudents: (communityId) => api.get(`/teachers/communities/${communityId}/students`),
+  getProfile: () => api.get('/teachers/profile'),
+  updateProfile: (data) => api.put('/teachers/profile', data),
 };
 
 export default api;

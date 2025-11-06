@@ -4,6 +4,8 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const NoteCard = ({ id, title, subject, uploader, uploaderName, date, likes, fileUrl, format, onDelete }) => {
   const token = localStorage.getItem("token");
   let isOwner = false;
@@ -33,7 +35,7 @@ const NoteCard = ({ id, title, subject, uploader, uploaderName, date, likes, fil
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`https://studyhub-backend-kxxh.onrender.com/api/notes/${id}`, {
+      await axios.delete(`${API_URL}/api/notes/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Note deleted");

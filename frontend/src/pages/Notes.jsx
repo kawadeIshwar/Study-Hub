@@ -4,14 +4,17 @@ import SearchBar from '../components/SearchBar';
 import NoteCard from '../components/NoteCard';
 import { toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Search, Filter, TrendingUp, BookOpen, Users, Download, Sparkles, Award } from 'lucide-react';
+import { Search, Filter, TrendingUp, BookOpen, Users, Download, Sparkles, Award, GraduationCap, UserCircle } from 'lucide-react';
 import cacheService from '../services/cacheService';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Notes = () => {
   const [notes, setNotes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [isLoadingFresh, setIsLoadingFresh] = useState(false);
+  const [activeSection, setActiveSection] = useState('all'); // 'all', 'teacher', 'student'
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -26,7 +29,7 @@ const Notes = () => {
 
         // Fetch fresh data in background
         setIsLoadingFresh(true);
-        const res = await axios.get('https://studyhub-backend-kxxh.onrender.com/api/upload/all');
+        const res = await axios.get(`${API_URL}/api/upload/all`);
         
         // Update cache and state with fresh data
         cacheService.set('notes_all', res.data);
@@ -59,6 +62,12 @@ const Notes = () => {
   const subjects = [...new Set(notes.map((note) => note.subject))];
 
   const filteredNotes = notes
+    .filter((note) => {
+      // Filter by section (teacher/student/all)
+      if (activeSection === 'teacher') return note.uploaderRole === 'teacher';
+      if (activeSection === 'student') return note.uploaderRole === 'student';
+      return true; // 'all' section
+    })
     .filter((note) =>
       selectedSubject ? note.subject === selectedSubject : true
     )
@@ -67,6 +76,9 @@ const Notes = () => {
       note.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       note.tags.join(',').toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+  const teacherNotes = notes.filter((note) => note.uploaderRole === 'teacher');
+  const studentNotes = notes.filter((note) => note.uploaderRole === 'student');
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -182,6 +194,72 @@ const Notes = () => {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Section Tabs */}
+        <div className="flex justify-center mb-8 animate-fadeIn delay-300">
+          <div className="inline-flex bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-3xl p-2 shadow-2xl border border-gray-700/50 dark:border-gray-600/50">
+            <button
+              onClick={() => setActiveSection('all')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[180px] justify-center ${
+                activeSection === 'all'
+                  ? 'bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 text-white shadow-2xl shadow-orange-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-orange-400 dark:hover:text-orange-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <BookOpen className="w-6 h-6" />
+              <span className="flex items-center gap-2">
+                All Notes 
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeSection === 'all' 
+                    ? 'bg-white/30 text-white' 
+                    : 'bg-gray-700 text-gray-300'
+                }`}>
+                  {notes.length}
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveSection('teacher')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[180px] justify-center ${
+                activeSection === 'teacher'
+                  ? 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-2xl shadow-blue-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-blue-400 dark:hover:text-blue-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <GraduationCap className="w-6 h-6" />
+              <span className="flex items-center gap-2">
+                Teachers
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeSection === 'teacher' 
+                    ? 'bg-white/30 text-white' 
+                    : 'bg-gray-700 text-gray-300'
+                }`}>
+                  {teacherNotes.length}
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveSection('student')}
+              className={`px-10 py-4 rounded-2xl font-black text-base transition-all duration-300 flex items-center gap-3 min-w-[180px] justify-center ${
+                activeSection === 'student'
+                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-2xl shadow-emerald-500/50 scale-105 transform'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-emerald-400 dark:hover:text-emerald-300 hover:bg-gray-800/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <UserCircle className="w-6 h-6" />
+              <span className="flex items-center gap-2">
+                Students
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeSection === 'student' 
+                    ? 'bg-white/30 text-white' 
+                    : 'bg-gray-700 text-gray-300'
+                }`}>
+                  {studentNotes.length}
+                </span>
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Search and Filter Section */}

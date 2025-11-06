@@ -14,12 +14,17 @@ const router = express.Router();
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Get all communities with search and filter (accessible to all users)
 router.get('/', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
-    const { search, tags, page = 1, limit = 12 } = req.query;
+    const { search, tags, page = 1, limit = 12, creatorRole } = req.query;
     const skip = (page - 1) * limit;
 
     let query = {};
@@ -33,8 +38,15 @@ router.get('/', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req
       query.tags = { $in: tagArray };
     }
 
+    // If filtering by creator role, first get users with that role
+    if (creatorRole && ['teacher', 'student'].includes(creatorRole)) {
+      const creators = await User.find({ role: creatorRole }).select('_id');
+      const creatorIds = creators.map(c => c._id);
+      query.createdBy = { $in: creatorIds };
+    }
+
     const communities = await Community.find(query)
-      .populate('createdBy', 'name')
+      .populate('createdBy', 'name role institution specialization')
       .sort({ 'stats.lastActivity': -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -76,26 +88,37 @@ router.get('/', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req
 router.get('/:id', optionalAuth, cacheMiddleware(CACHE_DURATION.medium), async (req, res) => {
   try {
     const community = await Community.findById(req.params.id)
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name role');
 
     if (!community) {
       return res.status(404).json({ msg: 'Community not found' });
     }
 
+    // Ensure teacher communities always require approval
+    if (community.createdBy.role === 'teacher' && !community.settings.requireApproval) {
+      community.settings.requireApproval = true;
+      await community.save();
+    }
+
     // Check if user is a member (only if logged in)
     let membership = null;
+    let isPending = false;
     if (req.user && req.user.id) {
       membership = await CommunityMember.findOne({
         community: req.params.id,
-        user: req.user.id,
-        status: 'active'
+        user: req.user.id
       });
+      
+      // Check if membership is pending
+      isPending = membership?.status === 'pending';
     }
 
     res.json({
       ...community.toObject(),
-      isMember: !!membership,
-      userRole: membership?.role || null
+      isMember: membership?.status === 'active',
+      isPending: isPending,
+      userRole: membership?.role || null,
+      requiresApproval: community.settings.requireApproval
     });
   } catch (error) {
     console.error('Error fetching community:', error);
@@ -150,13 +173,23 @@ router.post('/', auth, invalidateCache('cache:/api/communities'), upload.single(
       }
     }
 
+    // Get user's role to determine if approval is required
+    const creator = await User.findById(req.user.id);
+    const requiresApproval = creator && creator.role === 'teacher';
+
     const community = new Community({
       name: name.trim(),
       description: description.trim(),
       tags: tagArray,
       coverImage: coverImageUrl,
       createdBy: req.user.id,
-      isPrivate: isPrivate === 'true' || isPrivate === true
+      isPrivate: isPrivate === 'true' || isPrivate === true,
+      settings: {
+        allowFileSharing: true,
+        allowPolls: true,
+        requireApproval: requiresApproval, // Auto-enable for teachers
+        profanityFilter: true
+      }
     });
 
     await community.save();
@@ -189,10 +222,22 @@ router.post('/', auth, invalidateCache('cache:/api/communities'), upload.single(
 // Join community
 router.post('/:id/join', auth, invalidateCache('cache:/api/communities'), async (req, res) => {
   try {
-    const community = await Community.findById(req.params.id);
+    const community = await Community.findById(req.params.id).populate('createdBy', 'role');
     if (!community) {
       return res.status(404).json({ msg: 'Community not found' });
     }
+
+    // Check if community creator is a teacher - if so, enforce approval requirement
+    const requiresApproval = community.createdBy.role === 'teacher' || community.settings.requireApproval;
+    
+    // Update community settings if needed to ensure teacher communities always require approval
+    if (community.createdBy.role === 'teacher' && !community.settings.requireApproval) {
+      community.settings.requireApproval = true;
+      await community.save();
+      console.log(`✅ Auto-fixed requireApproval for community: ${community.name}`);
+    }
+    
+    console.log(`Join attempt - Community: ${community.name}, Creator Role: ${community.createdBy.role}, Requires Approval: ${requiresApproval}`);
 
     // Check if already a member
     const existingMembership = await CommunityMember.findOne({
@@ -204,8 +249,11 @@ router.post('/:id/join', auth, invalidateCache('cache:/api/communities'), async 
       if (existingMembership.status === 'active') {
         return res.status(400).json({ msg: 'Already a member of this community' });
       }
+      if (existingMembership.status === 'pending') {
+        return res.status(400).json({ msg: 'Your request is pending approval', requiresApproval: true });
+      }
       // Reactivate if previously left
-      existingMembership.status = 'active';
+      existingMembership.status = requiresApproval ? 'pending' : 'active';
       await existingMembership.save();
     } else {
       // Create new membership
@@ -213,17 +261,23 @@ router.post('/:id/join', auth, invalidateCache('cache:/api/communities'), async 
         community: req.params.id,
         user: req.user.id,
         role: 'member',
-        status: 'active'
+        status: requiresApproval ? 'pending' : 'active'
       });
       await membership.save();
     }
 
-    // Update community stats
-    await Community.findByIdAndUpdate(req.params.id, {
-      $inc: { 'stats.totalMembers': 1 }
-    });
+    // Update community stats only if immediately active
+    if (!requiresApproval) {
+      await Community.findByIdAndUpdate(req.params.id, {
+        $inc: { 'stats.totalMembers': 1 }
+      });
+    }
 
-    res.json({ msg: 'Successfully joined community' });
+    const message = requiresApproval 
+      ? 'Join request sent. Waiting for teacher approval.' 
+      : 'Successfully joined community';
+    
+    res.json({ msg: message, requiresApproval });
   } catch (error) {
     console.error('Error joining community:', error);
     res.status(500).json({ msg: 'Server error' });

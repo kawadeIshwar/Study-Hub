@@ -8,6 +8,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node seedCommunities.js",
     "seed-users": "node seedUsersAndChats.js",
+    "seed-teachers": "node scripts/seedIndianTeachers.js",
+    "seed-student-communities": "node scripts/seedStudentCommunities.js",
+    "seed-teacher-notes": "node scripts/seedTeacherNotes.js",
+    "limit-notes": "node scripts/limitNotesTo30.js",
+    "migrate-notes": "node scripts/migrateNotes.js",
+    "fix-teacher-communities": "node scripts/fixTeacherCommunities.js",
     "server": "nodemon server.js",
     "client": "npm run dev --prefix ../frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\""

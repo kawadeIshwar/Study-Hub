@@ -6,8 +6,11 @@ import Upload from './pages/Upload';
 import Notes from './pages/Notes';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import TeacherSignup from './pages/TeacherSignup';
+import TeacherDashboard from './pages/TeacherDashboard';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
+import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
@@ -44,8 +47,11 @@ function App() {
           <Route path="/notes" element={<Notes />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/signup/teacher" element={<TeacherSignup />} />
+          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/communities" element={<Communities />} />
           <Route path="/communities/:communityId" element={<CommunityDetail />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />
         <BackendStatus />

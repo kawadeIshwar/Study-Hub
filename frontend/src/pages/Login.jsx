@@ -15,32 +15,77 @@ const Login = () => {
   // Get redirect path from state, query params, or default to home
   const redirectPath = location.state?.from || new URLSearchParams(location.search).get('redirect') || '/';
 
-// Handle Login
-const handleLogin = async (e) => {
-  e.preventDefault(); // Prevent form submission reload
-  
-  try {
-    const res = await authAPI.login({ email, password });
+  // Validate Login Form
+  const validateLogin = () => {
+    // Check for empty or whitespace-only fields
+    if (!email || email.trim() === '') {
+      toast.error('Email is required and cannot be empty');
+      return false;
+    }
 
-    const token = res.data.token;
-    localStorage.setItem('token', token);
-    toast.success("Login Successful!");
-    window.dispatchEvent(new Event("storage"));
+    if (!password || password.trim() === '') {
+      toast.error('Password is required and cannot be empty');
+      return false;
+    }
 
-    // Reset form data
-    setEmail('');
-    setPassword('');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return false;
+    }
 
-    // Redirect after 1.5 seconds
-    setTimeout(() => {
-      navigate(redirectPath);
-    }, 1500);
+    // Validate password length
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return false;
+    }
 
-  } catch (err) {
-    console.error('Login error:', err);
-    toast.error(err.response?.data?.error || err.response?.data?.msg || 'Login failed! Please try again.');
-  }
-};
+    return true;
+  };
+
+  // Handle Login
+  const handleLogin = async (e) => {
+    e.preventDefault(); // Prevent form submission reload
+    
+    // Validate form
+    if (!validateLogin()) {
+      return;
+    }
+
+    // Trim email before submission
+    const trimmedEmail = email.trim().toLowerCase();
+
+    try {
+      const res = await authAPI.login({ email: trimmedEmail, password });
+
+      const token = res.data.token;
+      const user = res.data.user;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      toast.success("Login Successful!");
+      window.dispatchEvent(new Event("storage"));
+
+      // Reset form data
+      setEmail('');
+      setPassword('');
+
+      // Redirect after 1.5 seconds - to teacher dashboard if teacher, otherwise to original path
+      setTimeout(() => {
+        if (user.role === 'teacher') {
+          navigate('/teacher/dashboard');
+        } else {
+          navigate(redirectPath);
+        }
+      }, 1500);
+
+    } catch (err) {
+      console.error('Login error:', err);
+      toast.error(err.response?.data?.error || err.response?.data?.msg || 'Login failed! Please try again.');
+    }
+  };
 
 
   return (
