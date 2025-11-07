@@ -116,19 +116,33 @@ const UploadForm = () => {
                 />
               </div>
 
-              {/* Semester Input */}
+              {/* Semester Radio Buttons */}
               <div className="relative group">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                   🎓 Semester
                 </label>
-                <input
-                  type="text"
-                  name="semester"
-                  placeholder="e.g., 1st, 2nd, 3rd"
-                  value={formData.semester}
-                  onChange={handleChange}
-                  className="w-full px-5 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500"
-                />
+                <div className="grid grid-cols-4 gap-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <label
+                      key={sem}
+                      className={`relative flex items-center justify-center px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
+                        formData.semester === sem.toString()
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg scale-105'
+                          : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:scale-105'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="semester"
+                        value={sem}
+                        checked={formData.semester === sem.toString()}
+                        onChange={handleChange}
+                        className="absolute opacity-0"
+                      />
+                      <span className="font-bold">{sem}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Tags Input */}

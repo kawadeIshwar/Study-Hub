@@ -434,4 +434,38 @@ router.put('/:communityId/members/:userId/role', auth, async (req, res) => {
   }
 });
 
+// Delete community (creator only)
+router.delete('/:id', auth, invalidateCache('cache:/api/communities'), async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    
+    if (!community) {
+      return res.status(404).json({ msg: 'Community not found' });
+    }
+
+    // Check if the user is the creator of the community
+    if (community.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Only the community creator can delete this community' });
+    }
+
+    // Delete all related data
+    await Promise.all([
+      // Delete all community members
+      CommunityMember.deleteMany({ community: req.params.id }),
+      // Delete all messages in this community
+      Message.deleteMany({ community: req.params.id }),
+      // Delete all polls in this community
+      Poll.deleteMany({ community: req.params.id })
+    ]);
+
+    // Delete the community
+    await Community.findByIdAndDelete(req.params.id);
+
+    res.json({ msg: 'Community deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting community:', error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 export default router;

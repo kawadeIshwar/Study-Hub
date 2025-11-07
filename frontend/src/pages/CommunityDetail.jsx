@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Pin, Search, Settings, Bell, Hash, UserPlus, Lock, Clock } from 'lucide-react';
+import { Users, Pin, Search, Settings, Bell, Hash, UserPlus, Lock, Clock, Trash2 } from 'lucide-react';
 import CommunityChat from '../components/CommunityChat';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -22,6 +22,8 @@ export default function CommunityDetail() {
   const [isPending, setIsPending] = useState(false);
   const [joining, setJoining] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState(new Set());
+  const [currentUser, setCurrentUser] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   
   const token = localStorage.getItem('token');
 
@@ -103,11 +105,49 @@ export default function CommunityDetail() {
       }
     };
     
+    // Fetch current user profile
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCurrentUser(res.data);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+
     // Execute both but don't wait - let UI show immediately
     fetchCommunityDetails();
     fetchMembers(); // Run in background
+    fetchCurrentUser(); // Fetch current user
     
   }, [communityId, token]);
+
+  const handleDeleteCommunity = async () => {
+    if (!window.confirm('Are you sure you want to delete this community? This action cannot be undone and will delete all messages, polls, and members.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await axios.delete(`${API_URL}/api/communities/${communityId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Clear cache
+      cacheService.remove(`communities_${communityId}`);
+      cacheService.remove(`communities_${communityId}_members`);
+
+      toast.success('Community deleted successfully');
+      navigate('/communities');
+    } catch (error) {
+      console.error('Error deleting community:', error);
+      toast.error(error.response?.data?.msg || 'Failed to delete community');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleJoinCommunity = async () => {
     if (!token) {
@@ -272,6 +312,21 @@ export default function CommunityDetail() {
                   </span>
                 ))}
               </div>
+              {/* Delete button - only visible to community creator */}
+              {currentUser && currentCommunity.createdBy?._id === currentUser._id && (
+                <button
+                  onClick={handleDeleteCommunity}
+                  disabled={deleting}
+                  className="ml-2 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete Community"
+                >
+                  {deleting ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-red-600 border-t-transparent"></div>
+                  ) : (
+                    <Trash2 className="w-5 h-5" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

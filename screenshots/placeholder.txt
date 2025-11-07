@@ -1,0 +1,16 @@
+Place your website screenshots here with the following names:
+- home.png (Home page screenshot)
+- login.png (Login page screenshot)
+- notes.png (Notes page screenshot)
+- upload.png (Upload page screenshot)
+- communities.png (Communities page screenshot)
+- community-detail.png (Community detail with chat)
+- profile.png (User profile page)
+- teacher-dashboard.png (Teacher dashboard)
+
+You can take screenshots using:
+1. Windows: Windows Key + Shift + S
+2. Browser DevTools: F12 > Device toolbar > Screenshot
+3. Full page screenshot extensions
+
+After adding screenshots, run: node add-screenshots-to-report.js

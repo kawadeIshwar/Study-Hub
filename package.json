@@ -1,6 +1,7 @@
 {
   "name": "studyhub-community",
   "version": "1.0.0",
+  "type": "module",
   "description": "MERN-based Community Page for StudyHub - A student notes sharing platform",
   "main": "index.js",
   "scripts": {
@@ -9,7 +10,9 @@
     "client": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "heroku-postbuild": "cd frontend && npm install && npm run build"
+    "heroku-postbuild": "cd frontend && npm install && npm run build",
+    "generate-report": "node generate-report.js",
+    "generate-complete-report": "node add-screenshots-to-report.js"
   },
   "keywords": [
     "studyhub",
@@ -31,5 +34,8 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "pdfkit": "^0.17.2"
   }
 }
